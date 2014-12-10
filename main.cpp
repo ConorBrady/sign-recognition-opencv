@@ -6,49 +6,6 @@
 using namespace cv;
 using namespace std;
 
-string type2str(int type) {
-	string r;
-
-	uchar depth = type & CV_MAT_DEPTH_MASK;
-	uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-	switch ( depth ) {
-		case CV_8U:  r = "8U"; break;
-		case CV_8S:  r = "8S"; break;
-		case CV_16U: r = "16U"; break;
-		case CV_16S: r = "16S"; break;
-		case CV_32S: r = "32S"; break;
-		case CV_32F: r = "32F"; break;
-		case CV_64F: r = "64F"; break;
-		default:     r = "User"; break;
-	}
-
-	r += "C";
-	r += (chans+'0');
-
-	return r;
-}
-
-void printImage(Mat chamfer_image) {
-
-	for(int i = 0; i < chamfer_image.rows; i++) {
-		for(int j = 0; j < chamfer_image.cols; j++) {
-			float val = chamfer_image.at<float>(i, j);
-			if(val == 0) {
-
-				printf("\x1b[31m0\x1b[0m ") ;
-			} else {
-				printf("1 ") ;
-			}
-
-		}
-		cout << endl;
-	}
-	cout << endl;
-}
-
-vector<float> maxes(9);
-vector<float> mins(9);
 
 float chamferMatch(vector<Point> templatePoints, Mat chamferedImage, Size matchingSpace) {
 
@@ -75,10 +32,8 @@ float maxMultiChamferMatch(vector<vector<Point>>templatePoints, vector<Mat> cham
 	float max = -1;
 	for(int i = 0; i < chamferedImages.size(); i++) {
 		float newVal = chamferMatch(templatePoints[i],chamferedImages[i],matchingSpace)/normalisationDivisors[i];
-		cout << ", " << newVal ;
 		max = fmax(newVal,max);
 	}
-	cout << " returning " << max << endl;
 	return max;
 }
 
@@ -104,8 +59,7 @@ Mat getBackProjection(const char* filename, Mat image) {
 
 	Mat backproj;
 	calcBackProject( &hsv, 1, channels, hist, backproj, ranges, 1, true );
-	imshow("bp",backproj);
-	waitKey(0);
+
 	dilate(backproj,backproj,Mat());
 	threshold(backproj, backproj, 5, 255, cv::THRESH_BINARY);
 	return backproj;
@@ -117,7 +71,6 @@ int getPanelCount(Mat image, bool top) {
 	vector<Vec4i> hierarchy;
 
 
-	imshow("Input image", image);
 
 	findContours(image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE );
 
@@ -135,7 +88,6 @@ int getPanelCount(Mat image, bool top) {
 		drawContours( temp, contours, idx, color, CV_FILLED, 8, hierarchy );
 	}
 
-	imshow( "Components", temp );
 
 	int count = 0;
 	while(child >= 0) {
@@ -144,7 +96,6 @@ int getPanelCount(Mat image, bool top) {
 		}
 		child = hierarchy[child][0];
 	}
-	cout << "Panel count:" << count << endl;
 
 	return count;
 }
@@ -203,8 +154,7 @@ int main( int, char** argv )
 	vector<int> signPanelCounts;
 
 	for (int i = 0; i < knownSignFiles.size(); i++) {
-		maxes[i] = 0;
-		mins[i] = 10000000;
+
 		knownSigns[i] = imread(knownSignFiles[i]);
 
 		Mat temp;
@@ -306,12 +256,6 @@ int main( int, char** argv )
 						chamferImages.push_back(searchImage.clone());
 					}
 
-
-
-					imshow("white",chamferImages[0]);
-					imshow("black",chamferImages[1]);
-
-
 					int closest = -1;
 					double closestVal = 1000000;
 					for(int k = 0; k < knownSigns.size(); k++) {
@@ -326,7 +270,6 @@ int main( int, char** argv )
 								chamferBlackNormalisationDivisors[k]
 							};
 
-							cout << "Image " << knownSignFiles[k];
 							float match = maxMultiChamferMatch( templatePoints, chamferImages, chamferImages[0].size()-knownSigns[k].size(), normalisationDivisors);
 
 							if(match < closestVal) {
