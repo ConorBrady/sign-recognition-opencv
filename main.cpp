@@ -50,7 +50,7 @@ void printImage(Mat chamfer_image) {
 vector<float> maxes(9);
 vector<float> mins(9);
 
-float chamfer_match(vector<Point> templatePoints, Mat chamferedImage, Size matchingSpace) {
+float chamferMatch(vector<Point> templatePoints, Mat chamferedImage, Size matchingSpace) {
 
 	assert(chamferedImage.type() == CV_32FC1);
 	float min = -1;
@@ -68,7 +68,85 @@ float chamfer_match(vector<Point> templatePoints, Mat chamferedImage, Size match
 		}
 	}
 
-	return min/(templatePoints.size()-400);
+	return min;
+}
+
+float maxMultiChamferMatch(vector<vector<Point>>templatePoints, vector<Mat> chamferedImages, Size matchingSpace, vector<float> normalisationDivisors) {
+	float max = -1;
+	for(int i = 0; i < chamferedImages.size(); i++) {
+		float newVal = chamferMatch(templatePoints[i],chamferedImages[i],matchingSpace)/normalisationDivisors[i];
+		cout << ", " << newVal ;
+		max = fmax(newVal,max);
+	}
+	cout << " returning " << max << endl;
+	return max;
+}
+
+Mat getBackProjection(const char* filename, Mat image) {
+
+	Mat src; Mat hsv;
+	Mat mask;
+
+	src = imread( filename, 1 );
+	cvtColor( src, hsv, COLOR_BGR2HSV );
+
+	Mat hist;
+	int h_bins = 20; int s_bins = 20;
+	int histSize[] = { h_bins, s_bins };
+	float h_range[] = { 0, 180 };
+	float s_range[] = { 0, 255 };
+	const float* ranges[] = { h_range, s_range };
+	int channels[] = { 0, 1 };
+	calcHist( &hsv, 1, channels, mask, hist, 2, histSize, ranges, true, false );
+	normalize( hist, hist, 0, 255, NORM_MINMAX, -1, Mat());
+
+	cvtColor( image, hsv, COLOR_BGR2HSV );
+
+	Mat backproj;
+	calcBackProject( &hsv, 1, channels, hist, backproj, ranges, 1, true );
+	imshow("bp",backproj);
+	waitKey(0);
+	dilate(backproj,backproj,Mat());
+	threshold(backproj, backproj, 5, 255, cv::THRESH_BINARY);
+	return backproj;
+}
+
+int getPanelCount(Mat image, bool top) {
+
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
+
+
+	imshow("Input image", image);
+
+	findContours(image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE );
+
+	int child;
+	if(top) {
+		child = 0;
+	} else {
+		child = hierarchy[0][2];
+	}
+	int idx = child;
+	Mat temp(image.size(),CV_8UC3);
+	for( ; idx >= 0; idx = hierarchy[idx][0] )
+	{
+		Scalar color( rand()&255, rand()&255, rand()&255 );
+		drawContours( temp, contours, idx, color, CV_FILLED, 8, hierarchy );
+	}
+
+	imshow( "Components", temp );
+
+	int count = 0;
+	while(child >= 0) {
+		if(contourArea(contours[child])>50) {
+			count++;
+		}
+		child = hierarchy[child][0];
+	}
+	cout << "Panel count:" << count << endl;
+
+	return count;
 }
 
 int main( int, char** argv )
@@ -94,8 +172,35 @@ int main( int, char** argv )
 		"known_signs/yield.png"
 	};
 
+
+	vector<float> chamferWhiteNormalisationDivisors = {
+		90.0f,
+		65.0f,
+		35.0f,
+		65.0f,
+		55.0f,
+		75.7f,
+		90.0f,
+		90.0f,
+		70.0f
+	};
+
+	vector<float> chamferBlackNormalisationDivisors = {
+		30.0f,
+		85.0f,
+		80.0f,
+		85.0f,
+		30.0f,
+		45.0f,
+		30.0f,
+		30.0f,
+		20.0f
+	};
+
 	vector<Mat> knownSigns(knownSignFiles.size());
-	vector<vector<Point>> knownSignsTemplatePoints;
+	vector<vector<Point>> knownSignsWhiteTemplatePoints;
+	vector<vector<Point>> knownSignsBlackTemplatePoints;
+	vector<int> signPanelCounts;
 
 	for (int i = 0; i < knownSignFiles.size(); i++) {
 		maxes[i] = 0;
@@ -105,45 +210,31 @@ int main( int, char** argv )
 		Mat temp;
 
 		cvtColor(knownSigns[i],temp,CV_BGR2GRAY);
-		Canny(temp,temp,100,200);
 
-		knownSignsTemplatePoints.push_back(vector<Point>());
+		knownSignsWhiteTemplatePoints.push_back(vector<Point>());
+		knownSignsBlackTemplatePoints.push_back(vector<Point>());
 
 		for(int j = 0; j < knownSigns[i].rows; j++) {
 			for(int k = 0; k < knownSigns[i].cols; k++) {
-				if(temp.at<unsigned char>(j,k) != 0) {
-					knownSignsTemplatePoints[i].push_back(Point(k,j));
+				if(temp.at<unsigned char>(j,k) > 200) {
+					knownSignsWhiteTemplatePoints[i].push_back(Point(k,j));
+				}
+				if(temp.at<unsigned char>(j,k) < 50) {
+					knownSignsBlackTemplatePoints[i].push_back(Point(k,j));
 				}
 			}
 		}
-		imshow("bestmatch",temp);
-		// waitKey(0);
+
+		threshold(temp, temp, 200, 255, THRESH_BINARY);
+		signPanelCounts.push_back(getPanelCount(temp,true));
 	}
 
-	Mat src; Mat hsv;
-	Mat mask;
-
-	src = imread( "back_project_data.png", 1 );
-	cvtColor( src, hsv, COLOR_BGR2HSV );
-
-	Mat hist;
-	int h_bins = 20; int s_bins = 20;
-	int histSize[] = { h_bins, s_bins };
-	float h_range[] = { 0, 180 };
-	float s_range[] = { 0, 255 };
-	const float* ranges[] = { h_range, s_range };
-	int channels[] = { 0, 1 };
-	calcHist( &hsv, 1, channels, mask, hist, 2, histSize, ranges, true, false );
-	normalize( hist, hist, 0, 255, NORM_MINMAX, -1, Mat());
-
 	for(int i = 0; i < unknownSignFiles.size(); i++) {
-		Mat image = imread(unknownSignFiles[i]);
-		cvtColor( image, hsv, COLOR_BGR2HSV );
 
-		Mat backproj;
-		calcBackProject( &hsv, 1, channels, hist, backproj, ranges, 1, true );
-		dilate(backproj,backproj,Mat());
-		threshold(backproj, backproj, 5, 255, cv::THRESH_BINARY);
+		Mat image = imread(unknownSignFiles[i]);
+
+		Mat backproj = getBackProjection("back_project_data.png", image);
+
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 
@@ -153,61 +244,114 @@ int main( int, char** argv )
 		{
 			if(hierarchy[j][2] >= 0 && hierarchy[j][3] < 0) { // Has child and no parent
 
+				#define MIN_COMPONANT_AREA 200
+
 				vector<Point> contoursPoly;
 				approxPolyDP( Mat(contours[j]), contoursPoly, 3, true );
-				Rect bounds = boundingRect(Mat(contoursPoly));
+				Rect outerBounds = boundingRect(Mat(contoursPoly));
 
-				Mat mask = Mat::zeros(image.size(), CV_8UC1);
-				drawContours(mask, contours, j, Scalar(255), CV_FILLED, 8, hierarchy, 0);
+				Rect bounds;
 
-				Mat maskedImage;
-				Mat invGrayImage;
-				cvtColor( image, invGrayImage, CV_BGR2GRAY);
-				bitwise_not(invGrayImage,invGrayImage);
-				invGrayImage.copyTo(maskedImage, mask);
-				Mat searchImage(maskedImage, bounds);
-				bitwise_not(maskedImage,maskedImage);
-
-				resize(searchImage,searchImage,Size(80,80));
-				copyMakeBorder( searchImage, searchImage, 15, 15, 20, 20, BORDER_CONSTANT, Scalar::all(255) );
-
-				Mat edge_image;
-				Mat chamfer_image;
-				Canny( searchImage, edge_image, 50, 100);
-				threshold( edge_image, chamfer_image, 127, 255, THRESH_BINARY_INV );
-				imshow("edges",edge_image);
-				distanceTransform( chamfer_image, chamfer_image, CV_DIST_L2, 3);
-
-				// chamfer_image.convertTo(chamfer_image, CV_8U);
-				//
-				imshow("searchimage",searchImage);
-
-				int closest = -1;
-				double closestVal = 1000000;
-				for(int k = 0; k < knownSigns.size(); k++) {
-
-					float match = chamfer_match(knownSignsTemplatePoints[k],chamfer_image,Size(chamfer_image.size().width-knownSigns[i].size().width,chamfer_image.size().height-knownSigns[i].size().height));
-					maxes[k] = fmax(maxes[k],match);
-					mins[k] = fmin(mins[k],match);
-					//float backwardsMatch = chamfer_match(edge_image,chamferedKnownSigns[k]);
-					cout << "Image " << knownSignFiles[k] << ": " << match << endl;
-					// match += backwardsMatch;
-					if(match < closestVal) {
-						closest = k;
-						closestVal = match;
+				int child = hierarchy[j][2];
+				while(child >= 0) {
+					if(contourArea(contours[child]) > MIN_COMPONANT_AREA) {
+						vector<Point> contoursPoly;
+						approxPolyDP( Mat(contours[child]), contoursPoly, 3, true );
+						if(bounds.area() == 0) {
+							bounds = boundingRect(Mat(contoursPoly));
+						} else {
+							bounds |= boundingRect(Mat(contoursPoly));
+						}
 					}
+					child = hierarchy[child][0];
 				}
-				cout << closestVal << endl;
-				cout << closest << endl;
-				imshow("bestmatch",knownSigns[closest]);
-				waitKey(0);
+
+				if(bounds.area() > 0) {
+
+					Mat mask = Mat::zeros(image.size(), CV_8UC1);
+					int child = hierarchy[j][2];
+					while(child >= 0) {
+						if(contourArea(contours[child]) > MIN_COMPONANT_AREA) {
+							drawContours(mask, contours, child, Scalar(255), CV_FILLED, 8, hierarchy, 0);
+						}
+						child = hierarchy[child][0];
+					}
+
+
+					Mat maskedImage;
+					Mat invGrayImage;
+					cvtColor( image, invGrayImage, CV_BGR2GRAY);
+
+					Mat unmasked(invGrayImage,bounds);
+					Mat boundedMask(mask,bounds);
+
+					vector<Mat> chamferImages;
+
+					int panelCount;
+
+					for(int k = 0; k < 2; k++) {
+
+						Mat searchImage;
+						threshold( unmasked, unmasked, -1, 255, ( k==0 ? THRESH_BINARY : THRESH_BINARY_INV ) | THRESH_OTSU );
+
+						unmasked.copyTo(searchImage, boundedMask);
+						bitwise_not(searchImage,searchImage);
+						resize(searchImage,searchImage,Size(60,60));
+						copyMakeBorder( searchImage, searchImage, 25, 25, 30, 30, BORDER_CONSTANT, Scalar::all(255) );
+						threshold(searchImage, searchImage, -1, 255, THRESH_BINARY | THRESH_OTSU );
+						if(k == 0) {
+							panelCount = getPanelCount(searchImage, false);
+						}
+						distanceTransform( searchImage, searchImage, CV_DIST_L2, 3);
+						chamferImages.push_back(searchImage.clone());
+					}
+
+
+
+					imshow("white",chamferImages[0]);
+					imshow("black",chamferImages[1]);
+
+
+					int closest = -1;
+					double closestVal = 1000000;
+					for(int k = 0; k < knownSigns.size(); k++) {
+						if( ( panelCount == 1 && signPanelCounts[k] == 1 ) || ( panelCount > 1 && signPanelCounts[k] > 1 ) ) {
+							vector<vector<Point>> templatePoints = {
+								knownSignsWhiteTemplatePoints[k],
+								knownSignsBlackTemplatePoints[k]
+							};
+
+							vector<float> normalisationDivisors = {
+								chamferWhiteNormalisationDivisors[k],
+								chamferBlackNormalisationDivisors[k]
+							};
+
+							cout << "Image " << knownSignFiles[k];
+							float match = maxMultiChamferMatch( templatePoints, chamferImages, chamferImages[0].size()-knownSigns[k].size(), normalisationDivisors);
+
+							if(match < closestVal) {
+								closest = k;
+								closestVal = match;
+							}
+						}
+					}
+
+					if(closestVal<10) {
+						Mat thumbnail;
+						resize(knownSigns[closest],thumbnail,Size(30,25));
+						Scalar color( 0, 0, 255 );
+						rectangle( image, outerBounds, color, 2 );
+						cv::Rect roi( cv::Point( outerBounds.x, outerBounds.y ), thumbnail.size() );
+						thumbnail.copyTo( image( roi ) );
+					}
+
+				}
 
 			}
 		}
+		imshow("Image",image);
+		waitKey(0);
+	}
 
-	}
-	for (int i = 0; i < knownSigns.size(); i++) {
-		cout << i << " Max: " << maxes[i] << " Min: " << mins[i] << " Size: " << knownSignsTemplatePoints[i].size() << endl;
-	}
 	return 0;
 }
