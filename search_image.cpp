@@ -44,18 +44,21 @@ vector<RegionOfInterest> SearchImage::roisForBackProjection(const char * filenam
 
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
-	vector<RegionOfInterest> roi;
+	vector<RegionOfInterest> rois;
 
 	findContours(getBackProjection(filename, _image), contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE );
 
 	for (int i = 0; i < contours.size(); i++)
 	{
 		if(hierarchy[i][2] >= 0 && hierarchy[i][3] < 0) { // Has child and no parent
-			roi.push_back(RegionOfInterest(_image,contours,i,hierarchy));
+			RegionOfInterest roi(_image,contours,i,hierarchy);
+			if(roi.innerBounds().area() > 0) {
+				rois.push_back(roi);
+			}
 		}
 	}
 
-	return roi;
+	return rois;
 }
 
 Mat SearchImage::image() {

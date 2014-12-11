@@ -30,32 +30,30 @@ int main()
 
 		for ( RegionOfInterest& roi : searchImage.roisForBackProjection("back_project_data.png") ) {
 
-			if(roi.innerBounds().area() > 0 ) {
+			KnownSign* closest = nullptr;
+			float closestVal;
 
-				KnownSign* closest = nullptr;
-				float closestVal;
+			for( KnownSign& knownSign : knownSigns ) {
 
-				for( KnownSign& knownSign : knownSigns ) {
+				if( ( roi.panelCount() == 1 && knownSign.panelCount() == 1 ) ||
+					( roi.panelCount() >  1 && knownSign.panelCount() >  1 ) ) {
 
-					if( ( roi.panelCount() == 1 && knownSign.panelCount() == 1 ) ||
-						( roi.panelCount() >  1 && knownSign.panelCount() >  1 ) ) {
+					float match = knownSign.match(roi.whiteObjPix(), roi.blackObjPix());
 
-						float match = knownSign.match(roi.whiteObjPix(), roi.blackObjPix());
-
-						if(closest == nullptr || match < closestVal) {
-							closest = &knownSign;
-							closestVal = match;
-						}
+					if(closest == nullptr || match < closestVal) {
+						closest = &knownSign;
+						closestVal = match;
 					}
 				}
+			}
 
-				if( closestVal < ACCEPTANCE_MARK ) {
-					Mat image = searchImage.image();
-					rectangle( image, roi.outerBounds(), Scalar( 0, 0, 255 ), 2 );
+			if( closestVal < ACCEPTANCE_MARK ) {
+				
+				Mat image = searchImage.image();
+				rectangle( image, roi.outerBounds(), Scalar( 0, 0, 255 ), 2 );
 
-					Rect thumbnailPlace( Point( roi.outerBounds().x, roi.outerBounds().y ), closest->thumbnail().size() );
-					closest->thumbnail().copyTo( searchImage.image()(thumbnailPlace) );
-				}
+				Rect thumbnailPlace( Point( roi.outerBounds().x, roi.outerBounds().y ), closest->thumbnail().size() );
+				closest->thumbnail().copyTo( searchImage.image()(thumbnailPlace) );
 			}
 		}
 		imshow("Image",searchImage.image());
