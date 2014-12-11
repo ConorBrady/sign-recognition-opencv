@@ -1,4 +1,4 @@
 .DS_Store
-main.o
+*.o
 ass3
 ass2
