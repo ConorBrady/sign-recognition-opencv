@@ -2,6 +2,7 @@
 
 #include "known_sign.hpp"
 #include "search_image.hpp"
+#include "back_projection_packer.hpp"
 
 int main()
 {
@@ -26,9 +27,14 @@ int main()
 		SearchImage("unknown_signs/C2.png")
 	};
 
+	Mat backProjectData = BackProjectionPacker::pack("signs.png");
+
+#ifdef GEN
+	imwrite(string("gen/backprojectdata.png"),backProjectData);
+#endif
 	for( SearchImage& searchImage : searchImages ) {
 
-		for ( RegionOfInterest& roi : searchImage.roisForBackProjection("back_project_data.png") ) {
+		for ( RegionOfInterest& roi : searchImage.roisForBackProjection(backProjectData) ) {
 
 			KnownSign* closest = nullptr;
 			float closestVal;
@@ -48,7 +54,7 @@ int main()
 			}
 
 			if( closestVal < ACCEPTANCE_MARK ) {
-				
+
 				Mat image = searchImage.image();
 				rectangle( image, roi.outerBounds(), Scalar( 0, 0, 255 ), 2 );
 
@@ -56,8 +62,12 @@ int main()
 				closest->thumbnail().copyTo( searchImage.image()(thumbnailPlace) );
 			}
 		}
+#ifdef GEN
+		imwrite(string("gen/")+searchImage.ident()+".png",searchImage.image());
+#else
 		imshow("Image",searchImage.image());
 		waitKey(0);
+#endif
 	}
 
 	return 0;

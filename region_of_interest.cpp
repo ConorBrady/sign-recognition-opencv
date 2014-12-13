@@ -6,12 +6,14 @@
 #define BLACK_PIX 1
 #define WHITE_PIX 2
 
-RegionOfInterest::RegionOfInterest(Mat sourceImage, vector<vector<Point>> contours, int contourIndex, vector<Vec4i> hierarchy) {
+RegionOfInterest::RegionOfInterest(Mat sourceImage, vector<vector<Point>> contours, int contourIndex, vector<Vec4i> hierarchy, string ident) {
 
+	_ident = ident;
 	_sourceImage = sourceImage;
 	_contours = contours;
 	_contourIndex = contourIndex;
 	_hierarchy = hierarchy;
+	_identColor = Scalar( rand()&255, rand()&255, rand()&255 );
 
 	// Get inner and outer bounds for the region
 
@@ -75,6 +77,10 @@ int RegionOfInterest::panelCount() {
 	return count;
 }
 
+Scalar RegionOfInterest::identColor() {
+	return _identColor;
+}
+
 Mat RegionOfInterest::_objPix(int color) {
 
 	Mat fullSizeMask = Mat::zeros(_sourceImage.size(), CV_8UC1);
@@ -100,9 +106,13 @@ Mat RegionOfInterest::_objPix(int color) {
 	boundedImage.copyTo(searchImage, boundedMask);
 	bitwise_not(searchImage,searchImage);
 	resize(searchImage,searchImage,Size(60,60));
-	copyMakeBorder( searchImage, searchImage, 25, 25, 30, 30, BORDER_CONSTANT, Scalar::all(255) );
+	copyMakeBorder( searchImage, searchImage, 20, 20, 25, 25, BORDER_CONSTANT, Scalar::all(255) );
 	threshold(searchImage, searchImage, -1, 255, THRESH_BINARY | THRESH_OTSU );
-
+#ifdef GEN
+	Mat colVers;
+	cvtColor(searchImage,colVers,CV_GRAY2BGR);
+	imwrite(string("gen/") + _ident + ( color == WHITE_PIX ? "-white-pix.png" : "-black-pix.png"), colVers+_identColor);
+#endif
 	return searchImage;
 
 }

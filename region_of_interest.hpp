@@ -16,16 +16,20 @@ private:
 	vector<vector<Point>> _contours;
 	int _contourIndex;
 	vector<Vec4i> _hierarchy;
+	string _ident;
+
+	Scalar _identColor;
 
 	Mat _objPix(int color);
 
 public:
 
-	RegionOfInterest(Mat sourceImage, vector<vector<Point>> contours, int contourIndex, vector<Vec4i> hierarchy);
+	RegionOfInterest(Mat sourceImage, vector<vector<Point>> contours, int contourIndex, vector<Vec4i> hierarchy, string ident);
 
 	Rect innerBounds();
 	Rect outerBounds();
 
+	Scalar identColor();
 	Mat whiteObjPix();
 	Mat blackObjPix();
 
