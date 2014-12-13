@@ -95,29 +95,29 @@ I create a mask for the area covered by the regions child regions with an area o
 
 ![](gen/1-roisForBackProjection.png)
 
-|Image 1|
-|---|---|
+|Image 1|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 |Black Pixels|![](gen/1-602-black-pix.png)|![](gen/1-508-black-pix.png)|![](gen/1-679-black-pix.png)|![](gen/1-716-black-pix.png)|![](gen/1-804-black-pix.png)|![](gen/1-822-black-pix.png)
 |White Pixels|![](gen/1-602-white-pix.png)|![](gen/1-508-white-pix.png)|![](gen/1-679-white-pix.png)|![](gen/1-716-white-pix.png)|![](gen/1-804-white-pix.png)|![](gen/1-822-white-pix.png)|
 
 ![](gen/2-roisForBackProjection.png)
 
-|Image 2|
-|---|---|
+|Image 2|---|---|---|---|
+|---|---|---|---|---|---|
 |Black Pixels|![](gen/2-267-black-pix.png)|![](gen/2-340-black-pix.png)|![](gen/2-348-black-pix.png)|![](gen/2-400-black-pix.png)|
 |White Pixels|![](gen/2-267-white-pix.png)|![](gen/2-340-white-pix.png)|![](gen/2-348-white-pix.png)|![](gen/2-400-white-pix.png)|
 
 ![](gen/3-roisForBackProjection.png)
 
-|Image 3|
-|---|---|
+|Image 3|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 |Black Pixels|![](gen/3-563-black-pix.png)|![](gen/3-603-black-pix.png)|![](gen/3-691-black-pix.png)|![](gen/3-757-black-pix.png)|![](gen/3-791-black-pix.png)|
 |White Pixels|![](gen/3-563-white-pix.png)|![](gen/3-603-white-pix.png)|![](gen/3-691-white-pix.png)|![](gen/3-757-white-pix.png)|![](gen/3-791-white-pix.png)|
 
 ![](gen/C1-roisForBackProjection.png)
 
-|Image 4|
-|---|---|
+|Image 4|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 |Black Pixels|![](gen/C1-5-black-pix.png)|![](gen/C1-8-black-pix.png)|![](gen/C1-11-black-pix.png)|![](gen/C1-15-black-pix.png)|![](gen/C1-36-black-pix.png)|
 |White Pixels|![](gen/C1-5-white-pix.png)|![](gen/C1-8-white-pix.png)|![](gen/C1-11-white-pix.png)|![](gen/C1-15-white-pix.png)|![](gen/C1-36-white-pix.png)|
 |Black Pixels|![](gen/C1-46-black-pix.png)|![](gen/C1-48-black-pix.png)|![](gen/C1-50-black-pix.png)|![](gen/C1-53-black-pix.png)|![](gen/C1-55-black-pix.png)|
@@ -125,16 +125,17 @@ I create a mask for the area covered by the regions child regions with an area o
 
 ![](gen/C2-roisForBackProjection.png)
 
-|Image 4|
-|---|---|
+|Image 5|---|---|---|---|---|
+|---|---|---|---|---|---|
 |Black Pixels|![](gen/C2-4-black-pix.png)|![](gen/C2-7-black-pix.png)|![](gen/C2-9-black-pix.png)|![](gen/C2-12-black-pix.png)|![](gen/C2-17-black-pix.png)|
 |White Pixels|![](gen/C2-4-white-pix.png)|![](gen/C2-7-white-pix.png)|![](gen/C2-9-white-pix.png)|![](gen/C2-12-white-pix.png)|![](gen/C2-17-white-pix.png)|
 |Black Pixels|![](gen/C2-21-black-pix.png)|![](gen/C2-24-black-pix.png)|![](gen/C2-29-black-pix.png)|![](gen/C2-33-black-pix.png)|
 |White Pixels|![](gen/C2-21-white-pix.png)|![](gen/C2-24-white-pix.png)|![](gen/C2-29-white-pix.png)|![](gen/C2-33-white-pix.png)|
 
 ### Matching
+
 |Straight|Right|Left|No Straight|No Right|No Left|Parking|No Parking|Yield|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|:------:|:---:|:--:|:---------:|:------:|:-----:|:-----:|:--------:|:---:|
 |![](known_signs/straight.png)|![](known_signs/right.png)|![](known_signs/left.png)|![](known_signs/no_straight.png)|![](known_signs/no_right.png)|![](known_signs/no_left.png)|![](known_signs/parking.png)|![](known_signs/no_parking.png)|![](known_signs/yield.png)|
 
 Above is my templates, they will be decomposed into their white and black object pixels, ignoring the red section.
