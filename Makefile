@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS= -std=c++11 \
 		`pkg-config opencv --cflags` \
-		-g -DGEN
+		-g
 LDFLAGS=`pkg-config opencv --libs` \
 		-g -lboost_filesystem-mt -lboost_system
 SOURCES= \
