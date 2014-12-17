@@ -1,5 +1,3 @@
-# Sign Detection
-#### Conor Brady 08506426
 ### Finding the Signs
 First thing I needed was some means to detect the outer edge of the signs, given
 the vast spread of color, a technique such as kmeans would not have been effective,
